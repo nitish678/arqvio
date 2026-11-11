@@ -32,6 +32,7 @@ Private full verification history is retained under the developer's local privat
 - Public offline smoke: **71 tests passed**, one dependency warning, 12.52s in the local environment. Backend exit 0. The runner reports dependency versions separately; this local environment did not match all lockfile pins (e.g. numpy 2.4.6 vs expected 2.2.6, pandas/polars not installed). This is not a fresh-clone dependency acceptance claim.
 - Private development checkout Phase 3 targeted verification: **39 API/horizon tests**, then **47 combined backend regressions**, and **29 desktop tests / 6 files** with TypeScript clean. These numbers are evidence for the development checkout, not a claim that every public clone has the same private fixtures.
 - Private development checkout Phase 4 validation suite: **140 passed**, 3 documented numerical warnings, 175.61s; tester terminal discovery remained read-only and CLOSED.
+- Later tester-approved read/data check: XAUUSDm/EURUSDm/GBPUSDm/USDJPYm symbols offered; current seven-day bar/tick counts recorded privately. No public account/server identity or raw broker data included. Tester-configured validation + horizon suite: **144 passed**, 3 documented warnings, 198.54s.
 - Public repo contents and commit were verified through GitHub API. Sensitive `configs/cells_registry.json` and historical deploy fixture are absent.
 - No MT5 API calls, terminal operations, live actions, package build or native installer run.
 
