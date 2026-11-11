@@ -23,7 +23,7 @@ Private evidence directory (workspace-relative): `restart-archives/worker-eviden
 3. Horizon-aware strategy families/fills — PARTIAL: explicit research/intraday/swing profiles, paged M1 history and experimental tick fill path verified; pending/partial/full scalping parity remains. See [Phase 3 evidence](PHASE3_STRATEGIES.md), [M1 fix](M1_HISTORY_FIX.md) and [tick experiment](TICK_SCALPING_EXPERIMENT.md).
 4. Validation/generalization — PARTIAL: strict trial provenance and 140 validation tests pass; lockbox/nested-selection/evidence-writer work remains. See [Phase 4 evidence](PHASE4_VALIDATION.md). Statistical formulas remain frozen.
 5. Measured ML — PARTIAL: deterministic leakage-safe shadow baseline and 4 ML tests pass; no trained edge/deployment claim. See [Phase 5 evidence](PHASE5_ML.md).
-6. Friendly UI/UX — PLANNED; app copy English, owner discussion Roman Hinglish.
+6. Friendly UI/UX — PARTIAL: horizon selector and honest scalping-unavailable state tested; full readiness/wizard/visual accessibility review remains. See [Phase 6 evidence](PHASE6_UI_UX.md). App copy English, owner discussion Roman Hinglish.
 7. Portfolio/automation/paper evidence — PLANNED.
 8. Release acceptance — PLANNED; installer/live actions require separate authorization.
 

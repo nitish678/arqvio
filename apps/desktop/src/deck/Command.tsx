@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, type DeployOverview, type LaunchOverview, type StrategyRow, type SymbolsOverview } from "../api/ws";
 import type { CampaignForm } from "../ws/CampaignPanel";
-import { TIMEFRAMES } from "../ws/CampaignPanel";
+import { HORIZON_TEXT, TIMEFRAMES, type Horizon } from "../ws/CampaignPanel";
 import { LogTerminal } from "../ws/LeftRail";
 import { FAMILY_SHORT, familyName, fmt, shortId } from "../ws/util";
 import { bestOf, clock, type GenPoint, launchNow, useLiveView, useNow } from "./launchInfo";
@@ -75,6 +75,10 @@ export function Targets({ symbols, form, setForm, busy, ov, onMore }: {
           })}
           {extra.map((s) => <Chip key={s} on onClick={() => setForm({ ...form, symbols: tog(form.symbols, s) })}>{s}</Chip>)}
           {!symbols && <span className="dim">markets appear when MetaTrader 5 is running</span>}
+        </span></div>
+        <div><span className="k">HORIZON</span><span className="chips">
+          {(Object.keys(HORIZON_TEXT) as Horizon[]).map((h) => <Chip key={h} on={(form.horizon ?? "research") === h}
+            onClick={() => setForm({ ...form, horizon: h })} title={h === "scalping" ? "Unavailable: bid/ask ticks and execution parity required" : undefined}>{HORIZON_TEXT[h]}</Chip>)}
         </span></div>
         <div><span className="k">TIMEFRAMES</span><span className="chips">
           {TIMEFRAMES.map((tf) => <Chip key={tf} on={form.timeframes.includes(tf)} onClick={() => setForm({ ...form, timeframes: tog(form.timeframes, tf) })}>{tf}</Chip>)}
