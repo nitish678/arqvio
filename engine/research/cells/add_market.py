@@ -171,13 +171,35 @@ def ensure_spread(mt5: Any, symbol: str, probe: Any, *, now: datetime) -> dict[s
             "ticks": matrix.sample_count}
 
 
+def _window_rates(rates: Any, start: datetime, end: datetime) -> Any:
+    """Filter, order and deduplicate whole records before trusting their count."""
+    if rates is None or len(rates) == 0:
+        return rates
+    fields = ("time", "open", "high", "low", "close", "spread", "tick_volume", "real_volume")
+    if rates.dtype.names is None or not set(fields).issubset(rates.dtype.names):
+        raise AddMarketRefused("bars", "history response has missing bar fields")
+    rates = rates[(rates["time"] >= start.timestamp()) & (rates["time"] < end.timestamp())]
+    rates = rates[np.argsort(rates["time"], kind="stable")]
+    duplicate = np.flatnonzero(np.diff(rates["time"]) == 0)
+    for i in duplicate:
+        if any(rates[field][i] != rates[field][i + 1] for field in fields):
+            raise AddMarketRefused("bars", f"conflicting duplicate timestamp {int(rates['time'][i])}; retry a stable history window")
+    if duplicate.size:
+        rates = rates[np.r_[True, np.diff(rates["time"]) != 0]]
+    return rates
+
+
 def pull_bars(mt5: Any, symbol: str, tf: str, start: datetime, end: datetime) -> dict[str, np.ndarray]:
+    if start.tzinfo is None or end.tzinfo is None or start.utcoffset() != timedelta(0) or end.utcoffset() != timedelta(0):
+        raise AddMarketRefused("window", "history boundaries must be timezone-aware UTC")
+    if start >= end:
+        raise AddMarketRefused("window", "history start must be before end")
     code = getattr(mt5, f"TIMEFRAME_{tf}")
     rates, n = None, 0
     for attempt in range(HISTORY_TRIES):
         # A symbol/timeframe whose history the terminal has not downloaded yet answers empty while it downloads
         # (6 and 10 years of M5 came back as 0 bars, then in full minutes later): ask again after a pause.
-        rates = mt5.copy_rates_range(symbol, code, start.replace(tzinfo=None), end.replace(tzinfo=None))
+        rates = _window_rates(mt5.copy_rates_range(symbol, code, start, end), start, end)
         n = 0 if rates is None else len(rates)
         if n >= MIN_BARS or attempt == HISTORY_TRIES - 1:
             break
@@ -199,7 +221,7 @@ def pull_bars(mt5: Any, symbol: str, tf: str, start: datetime, end: datetime) ->
             else:
                 # Compatibility for narrow test adapters and older wrappers;
                 # the official MT5 package exposes copy_rates_from_pos.
-                newest = mt5.copy_rates_from(symbol, code, end.replace(tzinfo=None), count)
+                newest = mt5.copy_rates_from(symbol, code, end, count)
             if newest is None or len(newest) == 0:
                 break
             newest_parts.append(newest)
@@ -207,14 +229,9 @@ def pull_bars(mt5: Any, symbol: str, tf: str, start: datetime, end: datetime) ->
             if len(newest) < count or not use_pos:
                 break
         if newest_parts:
-            newest = np.concatenate(newest_parts)
-            keep = newest[(newest["time"] >= int(start.timestamp())) & (newest["time"] < int(end.timestamp()))]
+            keep = _window_rates(np.concatenate(newest_parts), start, end)
             if len(keep) > n:
                 rates, n = keep, len(keep)
-            # Do not count bars outside the requested window.
-            if n < MIN_BARS and newest_parts and not use_pos:
-                # Legacy adapters lack positional paging; preserve measured cap.
-                n = min(cap, max(n, len(newest_parts[0])))
     if n < MIN_BARS:
         raise AddMarketRefused("bars", f"{n} {tf} bars of {symbol} in {start.date()}..{end.date()}; a cell needs "
                                        f"at least {MIN_BARS} (widen the window or pick a shorter timeframe)")

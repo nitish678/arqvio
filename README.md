@@ -2,6 +2,8 @@
 
 **An experimental, Windows-native research workbench for reproducible trading-strategy discovery.**
 
+**Not approved for real-money use.** Existing execution, concurrency, model and evidence paths need further review and supported-scope MT5 parity. See [safety audit and blockers](docs/restart/REAL_MONEY_READINESS.md). Unit tests and successful data retrieval are not trading-safety or profitability certificates.
+
 ARQVIO combines a Python research engine, a local FastAPI API, a React/TypeScript interface and MetaTrader 5 integration. It is being developed toward **v4.2.0**. This repository contains a **development source snapshot through the current Phase 3 horizon-contract slice**, not a finished release, a profitable trading system, or an installer.
 
 [Getting started](docs/GETTING_STARTED.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md) · [Phase 3 evidence](docs/restart/PHASE3_STRATEGIES.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

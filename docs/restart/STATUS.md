@@ -1,6 +1,6 @@
 # Restart status — Worker 1
 
-Date: 2026-11-11. Release target V4.2.0; [nine-phase gates](V4_2_RELEASE_GATES.md). Source baseline `arqvio-v4@630fe0b` retained. No merge, commit, push, package build, installed runtime change, live terminal operation or trading action.
+Date: 2026-11-11. Release target V4.2.0; [nine-phase gates](V4_2_RELEASE_GATES.md). **NOT approved for real-money use**; see [safety review and blockers](REAL_MONEY_READINESS.md). Private baseline `arqvio-v4@630fe0b` retained; sanitized development commits are published separately. Authorized tester reads occurred, but no live trading, package build, installed runtime or risk change. Current priority is testing/fixing existing changes, not adding rushed feature slices.
 
 ## Phase 0
 
