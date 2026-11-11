@@ -24,7 +24,7 @@ Private evidence directory (workspace-relative): `restart-archives/worker-eviden
 4. Validation/generalization — PARTIAL: strict trial provenance and 140 validation tests pass; lockbox/nested-selection/evidence-writer work remains. See [Phase 4 evidence](PHASE4_VALIDATION.md). Statistical formulas remain frozen.
 5. Measured ML — PARTIAL: deterministic leakage-safe shadow baseline and 4 ML tests pass; no trained edge/deployment claim. See [Phase 5 evidence](PHASE5_ML.md).
 6. Friendly UI/UX — PARTIAL: horizon selector and honest scalping-unavailable state tested; full readiness/wizard/visual accessibility review remains. See [Phase 6 evidence](PHASE6_UI_UX.md). App copy English, owner discussion Roman Hinglish.
-7. Portfolio/automation/paper evidence — PLANNED.
+7. Portfolio/automation/paper evidence — PARTIAL: planned exposure, read-only replacement eligibility and automation idempotency keys verified; crash replay/live exposure/refresh remain. See [Phase 7 evidence](PHASE7_PORTFOLIO_AUTOMATION.md).
 8. Release acceptance — PLANNED; installer/live actions require separate authorization.
 
 Phase 0 preservation/canonical docs/scoped cleanup finished. Tester read/data validation for Phases 0–4 recorded in [tester evidence](PHASE0_4_TESTER_VALIDATION.md); tester remained read-only. Broader source/test inventory and RC acceptance remain unverified work, not implied by this scoped baseline. Phase 1A launch outcome/partial accounting fix now implemented and scoped-tested. Next: terminal readiness intent/queue retention and measured funnel; no branch merge or terminal access is implicit. No commit was made because the owner has not asked for one.

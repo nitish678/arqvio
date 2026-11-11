@@ -288,7 +288,7 @@ class Scheduler:
     def _spawn(self, auto: dict[str, Any], resume: dict[str, Any] | None) -> None:
         self._cancel.clear()
         _update(auto["id"], run_now=False)
-        self.state = {"automation_id": auto["id"], "name": auto["name"], "step_idx": 0,
+        self.state = {"automation_id": auto["id"], "run_id": secrets.token_hex(8), "name": auto["name"], "step_idx": 0,
                       "steps_total": len(auto["steps"]), "phase": "STARTING", "progress": None,
                       "started_utc": _iso(_now())}
         self._worker = threading.Thread(target=self._work, args=(auto, resume), daemon=True,
@@ -317,7 +317,9 @@ class Scheduler:
                 break
             step = steps[i]
             self.state.update(step_idx=i, phase=step["kind"].upper(), progress=None)
-            _write(self._run_file(), {"automation_id": auto["id"], "name": auto["name"], "step_idx": i,
+            idempotency_key = f"{auto['id']}:{self.state.get('run_id', 'legacy')}:{i}"
+            _write(self._run_file(), {"automation_id": auto["id"], "run_id": self.state.get('run_id'),
+                                      "idempotency_key": idempotency_key, "name": auto["name"], "step_idx": i,
                                       "steps_total": len(steps), "run_pool": run.run_pool,
                                       "portfolio_id": run.portfolio_id, "added": run.added,
                                       "campaigned": run.campaigned, "utc": _iso(_now())})

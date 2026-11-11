@@ -55,9 +55,38 @@ def axes(entry: dict[str, Any]) -> dict[str, str]:
     sym = str(entry["symbol"])
     base = sym[:6].upper()
     d = entry.get("dna") or {}
-    return {"market": sym, "currency": base[:3] if len(base) >= 6 else base, "type": str(entry["family"]),
+    currency = "+".join(dict.fromkeys((base[:3], base[3:6]))) if len(base) >= 6 else base
+    return {"market": sym, "currency": currency, "type": str(entry["family"]),
             "timeframe": str(entry["timeframe"]),
             "session": f"{int(d.get('window_start_hour_utc', 0)):02d}-{int(d.get('window_end_hour_utc', 24)):02d} UTC"}
+
+
+def exposure_breakdown(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    """Read-only planned exposure; live exposure requires MT5 deal/position reads."""
+    symbols: dict[str, dict[str, float]] = {}
+    currencies: dict[str, dict[str, float]] = {}
+    for entry in entries:
+        symbol = str(entry.get("symbol", "")); dna = entry.get("dna") or {}
+        risk = float(dna.get("risk_pct", entry.get("risk_pct", 0.0)) or 0.0)
+        lots = float(entry.get("lots", 0.0) or 0.0)
+        symbols.setdefault(symbol, {"members": 0, "risk_pct": 0.0, "lots": 0.0})
+        symbols[symbol]["members"] += 1; symbols[symbol]["risk_pct"] += risk; symbols[symbol]["lots"] += lots
+        base = symbol[:6].upper(); legs = (base[:3], base[3:6]) if len(base) >= 6 else (base,)
+        for leg in dict.fromkeys(legs):
+            currencies.setdefault(leg, {"members": 0, "risk_pct": 0.0, "lots": 0.0})
+            currencies[leg]["members"] += 1; currencies[leg]["risk_pct"] += risk; currencies[leg]["lots"] += lots
+    return {"symbols": symbols, "currencies": currencies, "member_count": len(entries),
+            "source": "vault planned exposure; live exposure requires MT5 deal/position read"}
+
+
+def replacement_eligibility(bot: dict[str, Any], *, judged: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Read-only recommendation; never swaps a bot or changes lot/risk."""
+    judged = judged or {}; reasons: list[str] = []
+    if judged.get("verdict") == "WEAKENING": reasons.append("WEAKENING_BELOW_P5")
+    if judged.get("verdict") == "TOO FEW": reasons.append("TOO_FEW_LIVE_TRADES")
+    if bot.get("parity_grade") in ("D", "F"): reasons.append("BELOW_PARITY")
+    return {"bot": bot.get("bot") or bot.get("id"), "eligible": bool(reasons), "reasons": reasons,
+            "auto_executed": False, "action": "owner_review_required" if reasons else "none"}
 
 
 def judge(members: list[dict[str, Any]], series: dict[str, dict[str, float]]) -> dict[str, Any]:
