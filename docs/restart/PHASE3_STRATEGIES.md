@@ -1,6 +1,6 @@
 # Phase 3 — strategy horizons and execution capability
 
-2026-11-11. Status: partial, first slice only. No live MT5, deployment, kernel change, risk change or commit yet.
+2026-11-11. Status: partial, horizon-contract slice plus desktop selector. No live MT5, deployment, kernel change, risk change or release build.
 
 ## Implemented
 
@@ -8,6 +8,7 @@
 - Existing OHLC/next-bar-open execution is labelled `MARKET2_OHLC`; intraday accepts M5/M15/M30/H1; swing accepts H1/H4/D1.
 - `scalping` fails before task creation with a truthful message requiring timestamped bid/ask ticks and execution parity. M1/M5 or a timeframe dropdown alone does not certify scalping.
 - Added optional frontend request type field without changing default legacy behavior.
+- Campaign UI now lets users choose Research, Intraday, Swing or Scalping. Scalping remains selectable only to show the explicit unavailable reason; it cannot launch.
 
 ## Verification
 

@@ -30,6 +30,7 @@ Private full verification history is retained under the developer's local privat
 
 - Public source scan found no private profile paths, key/token/private-key patterns, account-number patterns or private-network addresses. Two dummy test strings were renamed to avoid secret-like scanner matches.
 - Public offline smoke: **71 tests passed**, one dependency warning, 12.52s in the local environment. Backend exit 0. The runner reports dependency versions separately; this local environment did not match all lockfile pins (e.g. numpy 2.4.6 vs expected 2.2.6, pandas/polars not installed). This is not a fresh-clone dependency acceptance claim.
+- Private development checkout Phase 3 targeted verification: **39 API/horizon tests**, then **47 combined backend regressions**, and **29 desktop tests / 6 files** with TypeScript clean. These numbers are evidence for the development checkout, not a claim that every public clone has the same private fixtures.
 - Public repo contents and commit were verified through GitHub API. Sensitive `configs/cells_registry.json` and historical deploy fixture are absent.
 - No MT5 API calls, terminal operations, live actions, package build or native installer run.
 

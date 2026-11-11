@@ -50,7 +50,7 @@ describe("first run", () => {
     expect(choose).toBeGreaterThanOrEqual(0);
     expect(choose).toBeLessThan(post);
     expect(eng.calls[post].body).toEqual({ terminal: "t1", symbols: ["EURUSDm", "GBPUSDm", "XAUUSDm"],
-      timeframes: ["H1", "M15"], years: 3, depth: "QUICK", power: "high", search: "standard" });
+      timeframes: ["H1", "M15"], horizon: "research", years: 3, depth: "QUICK", power: "high", search: "standard" });
   });
 
   it("a closed terminal blocks LAUNCH and says what to do", async () => {

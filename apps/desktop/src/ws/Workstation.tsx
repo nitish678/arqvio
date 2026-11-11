@@ -38,7 +38,7 @@ interface Saved extends Prefs {
 const FIRST: Saved = {
   theme: "dark",
   fx: "FULL",
-  form: { symbols: [], timeframes: ["H1"], years: 6, depth: "STANDARD", power: "high" },
+  form: { symbols: [], timeframes: ["H1"], horizon: "research", years: 6, depth: "STANDARD", power: "high" },
   termId: null,
   seeded: false,
 };
@@ -169,12 +169,12 @@ export function Workstation({ layout = "classic", onSwitchLayout }: { layout?: L
     if (!termId) return;
     await api.chooseTerminal(termId);
     await api.launch({ terminal: termId, symbols: form.symbols, timeframes: form.timeframes, years: form.years,
-      depth: form.depth, power: form.power, search: form.engine ?? "standard", ...(saved.repeat ? { after: ["repeat"] as LaunchRequest["after"] } : {}) });
+      horizon: form.horizon ?? "research", depth: form.depth, power: form.power, search: form.engine ?? "standard", ...(saved.repeat ? { after: ["repeat"] as LaunchRequest["after"] } : {}) });
   }, "Launched: data first, then the safety check, then breeding. Follow it in the log.");
   const queueCurrent = async (after?: LaunchRequest["after"]) => {
     if (!termId) return;
     await api.enqueue({ terminal: termId, symbols: form.symbols, timeframes: form.timeframes, years: form.years,
-      depth: form.depth, power: form.power, search: form.engine ?? "standard", after });
+      horizon: form.horizon ?? "research", depth: form.depth, power: form.power, search: form.engine ?? "standard", after });
   };
   const gens = useGenerations(ov.data ?? null);
 

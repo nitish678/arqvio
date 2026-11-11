@@ -25,9 +25,14 @@ const FAMILY_TEXT: Record<string, string> = {
   DONCHIAN_BREAKOUT: "breakout: price leaves its N-bar channel",
 };
 
+export type Horizon = "research" | "intraday" | "swing" | "scalping";
+export const HORIZONS: readonly Horizon[] = ["research", "intraday", "swing", "scalping"];
+export const HORIZON_TEXT: Record<Horizon, string> = { research: "Research", intraday: "Intraday", swing: "Swing", scalping: "Scalping" };
+
 export interface CampaignForm {
   symbols: string[];
   timeframes: string[];
+  horizon?: Horizon;
   years: number;
   depth: Depth;
   power: Power;
@@ -215,6 +220,12 @@ export function CampaignPanel({ terms, termId, onTerm, onRefreshTerms, symbols, 
           </div>
 
           <div className="cols">
+            <div className="field">
+              <span className="label">Horizon</span>
+              <Seg items={HORIZONS} value={form.horizon ?? "research"} onPick={(h) => setForm({ ...form, horizon: h })} label="Strategy horizon" disabled={busy}
+                render={(h) => HORIZON_TEXT[h]} />
+              {form.horizon === "scalping" && <div className="note">Scalping is unavailable: timestamped bid/ask ticks and execution parity are not configured. OHLC bars are insufficient.</div>}
+            </div>
             <div className="field">
               <span className="label">Timeframes</span>
               <Seg items={TIMEFRAMES} value={form.timeframes} onPick={toggleTf} label="Timeframes" disabled={busy} multi />
