@@ -4,7 +4,7 @@
 
 ARQVIO combines a Python research engine, a local FastAPI API, a React/TypeScript interface and MetaTrader 5 integration. It is being developed toward **v4.2.0**. This repository contains a **development source snapshot through the current Phase 3 horizon-contract slice**, not a finished release, a profitable trading system, or an installer.
 
-[Getting started](docs/GETTING_STARTED.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Getting started](docs/GETTING_STARTED.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md) · [Phase 3 evidence](docs/restart/PHASE3_STRATEGIES.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## What is here
 
