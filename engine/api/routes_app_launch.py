@@ -650,12 +650,17 @@ def _save_queue(items: list[dict[str, Any]]) -> None:
     p = queue_path()
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps({"schema": "arqvio.launch_queue", "version": 1, "items": items}, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps({"schema": "arqvio.launch_queue", "version": 2, "items": items}, indent=2), encoding="utf-8")
     tmp.replace(p)
 
 
+def _waiting_queue_item(item: dict[str, Any], reason: str) -> dict[str, Any]:
+    """Return the same queue intent with visible readiness state; never drop it."""
+    return {**item, "state": "WAITING_TERMINAL", "waiting_reason": reason, "last_wait_utc": now_utc()}
+
+
 def start_next() -> dict[str, Any] | None:
-    """Start the first queued launch when nothing runs; a refused one leaves the queue with its reason logged."""
+    """Start the first queue intent without dropping it on readiness/failure."""
     with _qlock:
         if busy():
             return None
@@ -663,13 +668,22 @@ def start_next() -> dict[str, Any] | None:
         if not items:
             return None
         item, rest = items[0], items[1:]
-        _save_queue(rest)
     try:
         out = launch(LaunchRequest(**item["request"]))
+        with _qlock:
+            _save_queue(rest)
         applog.write("engine", f"Queue: started {item['id']} ({len(rest)} still waiting)", "OK")
         return out
     except HTTPException as exc:
-        applog.write("engine", f"Queue: {item['id']} could not start: {exc.detail}; removed from the queue", "WARN")
+        waiting = _waiting_queue_item(item, str(exc.detail))
+        with _qlock:
+            _save_queue([waiting, *rest])
+        applog.write("engine", f"Queue: {item['id']} WAITING_TERMINAL; retained intent: {exc.detail}", "WARN")
+        return {"launch": {"state": "WAITING_TERMINAL", "id": item["id"], "detail": str(exc.detail)}, "busy": False}
+    except Exception as exc:
+        with _qlock:
+            _save_queue([item, *rest])
+        applog.write("engine", f"Queue: {item['id']} failed and was retained: {type(exc).__name__}: {exc}", "ERROR")
         return None
 
 

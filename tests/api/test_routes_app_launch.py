@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+from fastapi import HTTPException
 
 from engine.api import routes_app_launch as L
 from engine.core import applog
@@ -125,3 +126,15 @@ def test_the_automation_chain_purges_then_repeats(isolated_arqvio_home, monkeypa
     q = L.queue_items()
     assert len(q) == 1 and q[0]["request"]["after"] == ["purge_copies", "repeat"]
     assert "terminal_path" not in q[0]["request"]
+
+
+def test_queue_start_retains_waiting_terminal_intent(isolated_arqvio_home, monkeypatch):
+    req = L.LaunchRequest(terminal="missing", symbols=["EURUSD"], timeframes=["H1"], depth="QUICK", power="eco")
+    qid = L.enqueue(req)["queued"]
+    monkeypatch.setattr(L, "busy", lambda: False)
+    monkeypatch.setattr(L, "launch", lambda req: (_ for _ in ()).throw(HTTPException(409, "terminal unavailable")))
+    out = L.start_next()
+    assert out["launch"]["state"] == "WAITING_TERMINAL"
+    items = L.queue_items()
+    assert items[0]["id"] == qid and items[0]["state"] == "WAITING_TERMINAL"
+    assert items[0]["request"]["terminal"] == "missing"
