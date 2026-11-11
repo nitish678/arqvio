@@ -1,0 +1,14 @@
+# ARQVIO default config (Stage 1: minimal, no business data)
+# Override any value via ARQVIO_<UPPER_SNAKE> env var or .env file.
+
+arqvio_home: null  # auto-resolved from ARQVIO_HOME or $HOME/ARQVIO
+
+log_level: INFO
+
+api:
+  host: 127.0.0.1
+  port: 8741
+
+# Live safety defaults. Stage 1 does not enforce these; Stage 12 will.
+demo_mode: true
+live_trading_enabled: false

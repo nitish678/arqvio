@@ -1,0 +1,12 @@
+{
+  "schema": "arqvio.app.verdict_citations",
+  "version": 1,
+  "ruling": "owner D-3, APP PLAN READY gate 2026-10-10 (DR-2026-10-10-s5-app, Plan-gate rulings): a campaign whose verdict exists only as stage-report text is cited by path + lines + file sha256; no verdict object is invented",
+  "citations": {
+    "ga-usdcadm_h1-s7-cbcb2ae061e70bef": {
+      "path": "artifacts/reports/s4_stage2_report.md",
+      "lines": [421, 422],
+      "badge": "verdict recorded as report text (pre-registry era)"
+    }
+  }
+}

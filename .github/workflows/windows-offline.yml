@@ -1,0 +1,55 @@
+name: Public-source offline checks
+
+on:
+  push:
+    paths:
+      - 'engine/**'
+      - 'tests/**'
+      - 'apps/desktop/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'apps/desktop/package.json'
+      - 'apps/desktop/package-lock.json'
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'tests/**'
+      - 'apps/desktop/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'apps/desktop/package.json'
+      - 'apps/desktop/package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  backend-offline:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: x64
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Install dependencies
+        run: uv sync --frozen --extra dev || uv sync --extra dev
+      - name: Run offline smoke suite
+        env:
+          ARQVIO_MT5_TERMINAL: ${{ runner.temp }}\no-terminal.exe
+        run: uv run --frozen --extra dev python scripts/offline_smoke.py
+  frontend-offline:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm --prefix apps/desktop ci
+      - name: Typecheck
+        run: npm --prefix apps/desktop run typecheck
+      - name: Run frontend tests
+        run: npm --prefix apps/desktop run test

@@ -1,0 +1,24 @@
+// ATR (features/atr.py): TR[0] = h - l; TR[t] = max(h - l, max(|h - pc|, |l - pc|)); cumulative-sum SMA.
+// Shared by every generated EA and the G9 verifier script: one definition.
+void UpdateTR(const int i)
+  {
+   ArrayResize(g_tr, i + 1, 65536);
+   ArrayResize(g_csum, i + 1, 65536);
+   if(i == 0) g_tr[0] = g_high[0] - g_low[0];
+   else
+     {
+      double pc = g_close[i - 1];
+      g_tr[i] = MathMax(g_high[i] - g_low[i], MathMax(MathAbs(g_high[i] - pc), MathAbs(g_low[i] - pc)));
+     }
+   g_csum[i] = (i == 0) ? g_tr[0] : g_csum[i - 1] + g_tr[i];
+  }
+
+// atr_at(end_index = i, period = p): false when undefined or not > 0 (G9 rulings 2, 3)
+bool AtrAt(const int i, const int p, double &value)
+  {
+   if(i < 0 || i + 1 < p) return false;
+   double v = (i == p - 1) ? g_csum[p - 1] / p : (g_csum[i] - g_csum[i - p]) / p;
+   if(!MathIsValidNumber(v) || v <= 0.0) return false;
+   value = v;
+   return true;
+  }

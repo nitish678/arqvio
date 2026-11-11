@@ -1,0 +1,124 @@
+//--- family STOCH_CROSS (backtest/strategies/stoch_cross.py, features/stoch.py) ---
+const int ST_K = {{ cfg.k_period }};
+const int ST_D = {{ cfg.d_period }};
+const int ST_S = {{ cfg.smoothing }};
+const int ST_WARMUP = {{ cfg.k_period + cfg.d_period + cfg.smoothing - 2 }};
+const int P_ATR_PERIOD = {{ cfg.atr_period }};
+double P_VOLUME, P_SL_ATR, P_TP_ATR, ST_OVERSOLD, ST_OVERBOUGHT;
+double g_st_raw[], g_st_k[], g_st_d[];
+bool g_st_raw_ok[], g_st_k_ok[], g_st_d_ok[];
+
+void FamilyInitConstants()
+  {
+   P_VOLUME = FromBits({{ cfg.volume | bits }});
+   P_SL_ATR = FromBits({{ cfg.sl_atr | bits }});
+   P_TP_ATR = FromBits({{ cfg.tp_atr | bits }});
+   ST_OVERSOLD = FromBits({{ cfg.k_oversold | bits }});
+   ST_OVERBOUGHT = FromBits({{ cfg.k_overbought | bits }});
+  }
+
+// _full_window_mean_into at i: mean of the `size` values ending at i when none is missing.
+bool WindowMean(const double &src[], const bool &ok[], const int i, const int size, double &value)
+  {
+   if(i < size - 1) return false;
+   double w[];
+   ArrayResize(w, size);
+   for(int j = 0; j < size; j++)
+     {
+      if(!ok[i - size + 1 + j]) return false;
+      w[j] = src[i - size + 1 + j];
+     }
+   value = PwMean(w, 0, size);
+   return true;
+  }
+
+void FamilyUpdate(const int i)
+  {
+   ArrayResize(g_st_raw, i + 1, 65536); ArrayResize(g_st_raw_ok, i + 1, 65536);
+   ArrayResize(g_st_k, i + 1, 65536); ArrayResize(g_st_k_ok, i + 1, 65536);
+   ArrayResize(g_st_d, i + 1, 65536); ArrayResize(g_st_d_ok, i + 1, 65536);
+   g_st_raw[i] = 0.0; g_st_raw_ok[i] = false; g_st_k[i] = 0.0; g_st_k_ok[i] = false; g_st_d[i] = 0.0; g_st_d_ok[i] = false;
+   if(i >= ST_K - 1)
+     {
+      int lo = i - ST_K + 1;
+      double ll = g_low[lo], hh = g_high[lo];
+      for(int j = lo + 1; j <= i; j++) { ll = MathMin(ll, g_low[j]); hh = MathMax(hh, g_high[j]); }
+      double denom = hh - ll;
+      if(denom > 0) { g_st_raw[i] = (g_close[i] - ll) / denom * 100.0; g_st_raw_ok[i] = true; }
+     }
+   g_st_k_ok[i] = WindowMean(g_st_raw, g_st_raw_ok, i, ST_S, g_st_k[i]);
+   g_st_d_ok[i] = WindowMean(g_st_k, g_st_k_ok, i, ST_D, g_st_d[i]);
+  }
+
+// Level B row: %K, %D (empty while undefined), then the gated crosses where both are defined at i and i - 1.
+string FamilyDump(const int i)
+  {
+   string s = (g_st_k_ok[i] ? HB(g_st_k[i]) : "") + "," + (g_st_d_ok[i] ? HB(g_st_d[i]) : "");
+   if(i < 1 || !g_st_k_ok[i] || !g_st_d_ok[i] || !g_st_k_ok[i - 1] || !g_st_d_ok[i - 1]) return s + ",,,,";
+   double kn = g_st_k[i], dn = g_st_d[i], kp = g_st_k[i - 1], dp = g_st_d[i - 1];
+   return s + "," + B01(kp <= dp && kn > dn) + "," + B01(kn <= ST_OVERSOLD && dn <= ST_OVERSOLD) + ","
+          + B01(kp >= dp && kn < dn) + "," + B01(kn >= ST_OVERBOUGHT && dn >= ST_OVERBOUGHT);
+  }
+
+bool StOpen(const int dir, const int i, const string reason, Intent &out)
+  {
+   bool suppress, hs, ht;
+   double sd, td;
+   StopDistances(i, P_SL_ATR, P_TP_ATR, P_ATR_PERIOD, suppress, hs, sd, ht, td);
+   if(suppress) return false;
+   out = MakeIntent(dir, P_VOLUME, i, reason, hs, sd, ht, td);
+   return true;
+  }
+
+bool FamilyOnBar(const int i, Intent &out)
+  {
+   if(i < ST_WARMUP) return false;
+   if(!g_st_k_ok[i] || !g_st_d_ok[i]) return false;
+   if(i < 1 || !g_st_k_ok[i - 1] || !g_st_d_ok[i - 1]) return false;
+   double k_now = g_st_k[i], d_now = g_st_d[i], k_prev = g_st_k[i - 1], d_prev = g_st_d[i - 1];
+   bool cl = g_dir > 0, cs = g_dir < 0;
+   if(g_pending_dir != 0)
+     {
+      if(!StOpen(g_pending_dir, i, "PENDING_OPEN", out)) return false;
+      g_dir = g_pending_dir;
+      g_pending_dir = 0;
+      return true;
+     }
+   if(k_prev <= d_prev && k_now > d_now)
+     {
+      if(k_now <= ST_OVERSOLD && d_now <= ST_OVERSOLD)
+        {
+         if(cs)
+           {
+            g_dir = 0; g_pending_dir = 1;
+            out = MakeIntent(1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+            return true;
+           }
+         if(!cl)
+           {
+            if(!StOpen(1, i, "ENTRY", out)) return false;
+            g_dir = 1;
+            return true;
+           }
+        }
+     }
+   else if(k_prev >= d_prev && k_now < d_now)
+     {
+      if(k_now >= ST_OVERBOUGHT && d_now >= ST_OVERBOUGHT)
+        {
+         if(cl)
+           {
+            g_dir = 0; g_pending_dir = -1;
+            out = MakeIntent(-1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+            return true;
+           }
+         if(!cs)
+           {
+            if(!StOpen(-1, i, "ENTRY", out)) return false;
+            g_dir = -1;
+            return true;
+           }
+        }
+     }
+   return false;
+  }

@@ -1,0 +1,126 @@
+//--- family RSI_REVERSION (backtest/strategies/rsi.py, features/rsi.py) ---
+const int RSI_PERIOD = {{ cfg.period }};
+const bool RSI_EXIT_MIDLINE = {{ "true" if cfg.exit_midline else "false" }};
+const int P_ATR_PERIOD = {{ cfg.atr_period }};
+double P_VOLUME, P_SL_ATR, P_TP_ATR, RSI_OVERSOLD, RSI_OVERBOUGHT;
+double g_gain[], g_loss[], g_rsi[];
+double g_avg_gain = 0.0, g_avg_loss = 0.0;
+
+void FamilyInitConstants()
+  {
+   P_VOLUME = FromBits({{ cfg.volume | bits }});
+   P_SL_ATR = FromBits({{ cfg.sl_atr | bits }});
+   P_TP_ATR = FromBits({{ cfg.tp_atr | bits }});
+   RSI_OVERSOLD = FromBits({{ cfg.oversold | bits }});
+   RSI_OVERBOUGHT = FromBits({{ cfg.overbought | bits }});
+  }
+
+double RsiValue(const double avg_gain, const double avg_loss)
+  {
+   if(avg_loss == 0.0 && avg_gain == 0.0) return 50.0;
+   if(avg_loss == 0.0) return 100.0;
+   if(avg_gain == 0.0) return 0.0;
+   double rs = avg_gain / avg_loss;
+   return 100.0 - 100.0 / (1.0 + rs);
+  }
+
+// rsi_series on the prefix [0..i] is a forward recursion, so its value at i is computed here once.
+void FamilyUpdate(const int i)
+  {
+   ArrayResize(g_rsi, i + 1, 65536);
+   g_rsi[i] = 0.0;
+   if(i >= 1)
+     {
+      ArrayResize(g_gain, i, 65536);
+      ArrayResize(g_loss, i, 65536);
+      double up = g_close[i] - g_close[i - 1];
+      g_gain[i - 1] = (up > 0.0) ? up : 0.0;
+      g_loss[i - 1] = (up < 0.0) ? -up : 0.0;
+     }
+   if(i == RSI_PERIOD)
+     {
+      g_avg_gain = PwMean(g_gain, 0, RSI_PERIOD);
+      g_avg_loss = PwMean(g_loss, 0, RSI_PERIOD);
+      g_rsi[i] = RsiValue(g_avg_gain, g_avg_loss);
+     }
+   else if(i > RSI_PERIOD)
+     {
+      g_avg_gain = (g_avg_gain * (RSI_PERIOD - 1) + g_gain[i - 1]) / RSI_PERIOD;
+      g_avg_loss = (g_avg_loss * (RSI_PERIOD - 1) + g_loss[i - 1]) / RSI_PERIOD;
+      g_rsi[i] = RsiValue(g_avg_gain, g_avg_loss);
+     }
+  }
+
+// Level B row: RSI, below oversold, above overbought, then the midline exits (state-free).
+string FamilyDump(const int i)
+  {
+   if(i < RSI_PERIOD) return ",,,,";
+   double v = g_rsi[i];
+   string s = HB(v) + "," + B01(v < RSI_OVERSOLD) + "," + B01(v > RSI_OVERBOUGHT);
+   if(i - 1 < RSI_PERIOD) return s + ",,";
+   double p = g_rsi[i - 1];
+   return s + "," + B01(p >= 50.0 && v < 50.0) + "," + B01(p <= 50.0 && v > 50.0);
+  }
+
+bool RsiOpen(const int dir, const int i, const string reason, Intent &out)
+  {
+   bool suppress, hs, ht;
+   double sd, td;
+   StopDistances(i, P_SL_ATR, P_TP_ATR, P_ATR_PERIOD, suppress, hs, sd, ht, td);
+   if(suppress) return false;
+   out = MakeIntent(dir, P_VOLUME, i, reason, hs, sd, ht, td);
+   return true;
+  }
+
+bool FamilyOnBar(const int i, Intent &out)
+  {
+   if(i < RSI_PERIOD) return false;   // warmup = period; rsi[i] is defined from i = period on
+   double val = g_rsi[i];
+   if(g_pending_dir != 0)
+     {
+      if(!RsiOpen(g_pending_dir, i, "PENDING_OPEN", out)) return false;
+      g_dir = g_pending_dir;
+      g_pending_dir = 0;
+      return true;
+     }
+   bool cl = g_dir > 0, cs = g_dir < 0;
+   if(RSI_EXIT_MIDLINE && (cl || cs) && i - 1 >= RSI_PERIOD)
+     {
+      double prev = g_rsi[i - 1];
+      if(cl && prev >= 50.0 && val < 50.0)
+        { g_dir = 0; out = MakeIntent(1, 0.0, i, "SIGNAL_EXIT", false, 0.0, false, 0.0); return true; }
+      if(cs && prev <= 50.0 && val > 50.0)
+        { g_dir = 0; out = MakeIntent(-1, 0.0, i, "SIGNAL_EXIT", false, 0.0, false, 0.0); return true; }
+     }
+   if(val < RSI_OVERSOLD)
+     {
+      if(cs)
+        {
+         g_dir = 0; g_pending_dir = 1;
+         out = MakeIntent(1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+         return true;
+        }
+      if(!cl)
+        {
+         if(!RsiOpen(1, i, "ENTRY", out)) return false;
+         g_dir = 1;
+         return true;
+        }
+     }
+   else if(val > RSI_OVERBOUGHT)
+     {
+      if(cl)
+        {
+         g_dir = 0; g_pending_dir = -1;
+         out = MakeIntent(-1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+         return true;
+        }
+      if(!cs)
+        {
+         if(!RsiOpen(-1, i, "ENTRY", out)) return false;
+         g_dir = -1;
+         return true;
+        }
+     }
+   return false;
+  }

@@ -1,0 +1,155 @@
+/*
+ * ARQVIO tokens (docs/decisions/DR-2026-10-22-arqvio-ui.md §2; v4 crimson on near-black, owner 2026-11-01), the only colour, type,
+ * density and motion source. Elevation is a colour step (s-0 page, s-1 panels, s-2 cards and inputs, s-3 hover and
+ * popovers), never a shadow and never a blur: text stays crisp at every scale.
+ * Accent marks actions (buttons, links, the selected tab); --brand-red is the HUD decoration (panel ticks, section
+ * labels, the logo); the semantic colours appear only on labelled pills.
+ * The contrast audit (src/__tests__/proof/tokens.test.ts) parses the `--name: #hex;` lines below.
+ */
+:root,
+:root[data-theme="dark"] {
+  --s-0: #050507;
+  --s-1: #0A0A0F;
+  --s-2: #101016;
+  --s-3: #18161E;
+  --divider: #1F1A22;
+  --line-2: #2E2731;
+  --line-3: #453941;
+  --grid-line: rgba(255, 255, 255, 0.028);
+  --text-1: #EEF1F5;
+  --text-num: #FFFFFF;
+  --text-2: #A4ACBB;
+  --accent: #FF2D55;
+  --accent-hover: #FF4D6D;
+  --accent-on-s3: #FF5A78;
+  --on-accent: #050507;
+  --focus: #62D6E8;
+  --brand-red: #FF1744;
+  --brand-silver: #C3C8D0;
+  --info: #62D6E8;
+  --sem-survivor: #4FDC9C;
+  --sem-weak: #F2B65A;
+  --sem-none: #A4ACBB;
+  --sem-refused: #FF6B76;
+  --sem-blocked: #FF9F5A;
+  --sem-survivor-on-s3: #4FDC9C;
+  --sem-weak-on-s3: #F2B65A;
+  --sem-none-on-s3: #A4ACBB;
+  --sem-refused-on-s3: #FF6B76;
+  --sem-blocked-on-s3: #FF9F5A;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --s-0: #F8FAFC;
+  --s-1: #FFFFFF;
+  --s-2: #F1F5F9;
+  --s-3: #E2E8F0;
+  --divider: #D5DBE3;
+  --line-2: #C3CAD5;
+  --line-3: #9AA3B2;
+  --grid-line: rgba(7, 9, 13, 0.035);
+  --text-1: #0F172A;
+  --text-num: #020617;
+  --text-2: #475569;
+  --accent: #B4232F;
+  --accent-hover: #961C27;
+  --accent-on-s3: #8F1B26;
+  --on-accent: #FFFFFF;
+  --focus: #0E7490;
+  --brand-red: #B4232F;
+  --brand-silver: #4D535C;
+  --info: #0E7490;
+  --sem-survivor: #047857;
+  --sem-weak: #B45309;
+  --sem-none: #475569;
+  --sem-refused: #B91C1C;
+  --sem-blocked: #C2410C;
+  --sem-survivor-on-s3: #065F46;
+  --sem-weak-on-s3: #92400E;
+  --sem-none-on-s3: #1E293B;
+  --sem-refused-on-s3: #991B1B;
+  --sem-blocked-on-s3: #9A3412;
+  color-scheme: light;
+}
+
+:root {
+  /* type: the platform's own hinted faces (no web font is shipped), tabular numerals everywhere */
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  --fs-dense: 11px;
+  --fs-label: 11.5px;
+  --fs-body: 13px;
+  --fs-title: 16px;
+  --fs-north: 32px;
+  --tracking-micro: 0.16em;
+
+  /* 8 px grid and compact density (default); comfort is a toggle */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --row-h: 36px;
+  --card-pad: 14px;
+  --sidebar-w: 232px;
+  --radius-control: 2px;
+  --radius-card: 2px;
+  --cut: 10px;
+
+  /* motion: durations <= 400 ms, exits x0.75, only transform and opacity animate */
+  --dur-micro: 120ms;
+  --dur-fade: 180ms;
+  --dur-medium: 240ms;
+  --dur-page: 320ms;
+  --dur-micro-exit: 90ms;
+  --dur-fade-exit: 135ms;
+  --dur-medium-exit: 180ms;
+  --dur-page-exit: 240ms;
+  /* the one loop: a live indicator (heartbeat, running job) breathes; it never moves anything */
+  --dur-loop: 1600ms;
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+:root[data-density="comfort"] {
+  --row-h: 44px;
+  --card-pad: 18px;
+}
+
+/* Reduced motion and FX tiers LITE/OFF: movement collapses to a fade (LITE, reduced) or nothing (OFF). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-micro: 0ms;
+    --dur-medium: 0ms;
+    --dur-page: 0ms;
+    --dur-micro-exit: 0ms;
+    --dur-medium-exit: 0ms;
+    --dur-page-exit: 0ms;
+    --dur-loop: 0ms;
+  }
+}
+
+:root[data-fx="LITE"] {
+  --dur-micro: 0ms;
+  --dur-medium: 0ms;
+  --dur-page: 0ms;
+  --dur-micro-exit: 0ms;
+  --dur-medium-exit: 0ms;
+  --dur-page-exit: 0ms;
+  --dur-loop: 0ms;
+}
+
+:root[data-fx="OFF"] {
+  --dur-loop: 0ms;
+  --dur-micro: 0ms;
+  --dur-fade: 0ms;
+  --dur-medium: 0ms;
+  --dur-page: 0ms;
+  --dur-micro-exit: 0ms;
+  --dur-fade-exit: 0ms;
+  --dur-medium-exit: 0ms;
+  --dur-page-exit: 0ms;
+}

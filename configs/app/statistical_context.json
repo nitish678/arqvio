@@ -1,0 +1,15 @@
+{
+  "schema": "arqvio.app.statistical_context",
+  "version": 1,
+  "ruling": "owner D-8, APP PLAN READY gate 2026-10-10: the 'Statistical Context' section renders the vs-random p_max and the planted-edge power curves, each labelled as what it is; the engine records no Monte Carlo artifact",
+  "power_tables": {
+    "usdcadm_h1": {
+      "path": "artifacts/reports/s4_stage3/power_out/power_table.json",
+      "label": "S4 Stage-3 planted-edge power curve (fills-matched power check)"
+    },
+    "xauusdm_h1": {
+      "path": "artifacts/reports/u2/xau_power/power_out/power_table.json",
+      "label": "U2 planted-edge power curve (parameterized power check)"
+    }
+  }
+}

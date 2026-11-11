@@ -1,0 +1,22 @@
+{
+  "schema": "arqvio.app.campaign_presets",
+  "version": 1,
+  "ruling": "DR-2026-10-10-s5-app §10: presets sealed before the first trial; islands never offered (runner.py:718, an island run cannot checkpoint)",
+  "presets": {
+    "SMOKE": {"pop": 50, "gen": 5, "budget": 400, "final_n": 20,
+              "label": "SMOKE-only: a structure proof, no edge claim",
+              "source": "artifacts/reports/s4_stage3_report.md:721 (the S4 Stage-3 proof structure)"},
+    "STANDARD": {"pop": 200, "gen": 25, "budget": 8000, "final_n": 20,
+                 "label": "the structure both registry-cited campaigns sealed",
+                 "source": "run.config of ga-usdcadm_h1-s7-cbcb2ae061e70bef and ga-xauusdm_h1-s7-f32e0d4defd9cf07"},
+    "DEEP": {"pop": 200, "gen": 50, "budget": 16000, "final_n": 20,
+             "label": "larger, same rules",
+             "source": "DR-2026-10-10-s5-app §10"}
+  },
+  "probe": {"pop": 20, "gen": 2, "budget": 40, "final_n": 4,
+            "label": "discarded timing probe, run in an isolated probe home built from copies (build ruling Decision 1)"},
+  "scope_notes": {
+    "xauusdm_h1": {"path": "artifacts/reports/u2/xau_power/xau_scope.json", "field": "scope_attached",
+                   "label": "U2 power scope attached to the XAU-H1 NONE verdict"}
+  }
+}

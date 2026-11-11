@@ -1,0 +1,100 @@
+//--- family MACD_CROSS (backtest/strategies/macd_cross.py) -----------
+const int MD_FAST = {{ cfg.fast_period }};
+const int MD_SLOW = {{ cfg.slow_period }};
+const int MD_SIG = {{ cfg.signal_period }};
+const int MD_WARMUP = {{ cfg.slow_period + cfg.signal_period - 1 }};
+const int P_ATR_PERIOD = {{ cfg.atr_period }};
+double P_VOLUME, P_SL_ATR, P_TP_ATR;
+double g_ema_f[], g_ema_s[], g_macd[], g_sig[];
+
+void FamilyInitConstants()
+  {
+   P_VOLUME = FromBits({{ cfg.volume | bits }});
+   P_SL_ATR = FromBits({{ cfg.sl_atr | bits }});
+   P_TP_ATR = FromBits({{ cfg.tp_atr | bits }});
+  }
+
+// ema_series: SMA seed over the first `period` finite values, then alpha * x + (1 - alpha) * prev.
+void EmaStep(const double &src[], const int seed_lo, const int i, const int period, double &out[])
+  {
+   int seed_end = seed_lo + period - 1;
+   if(i < seed_end) return;
+   if(i == seed_end) { out[i] = PwMean(src, seed_lo, period); return; }
+   double alpha = 2.0 / (period + 1);
+   out[i] = alpha * src[i] + (1.0 - alpha) * out[i - 1];
+  }
+
+void FamilyUpdate(const int i)
+  {
+   ArrayResize(g_ema_f, i + 1, 65536); ArrayResize(g_ema_s, i + 1, 65536);
+   ArrayResize(g_macd, i + 1, 65536); ArrayResize(g_sig, i + 1, 65536);
+   g_ema_f[i] = 0.0; g_ema_s[i] = 0.0; g_macd[i] = 0.0; g_sig[i] = 0.0;
+   EmaStep(g_close, 0, i, MD_FAST, g_ema_f);
+   EmaStep(g_close, 0, i, MD_SLOW, g_ema_s);
+   if(i >= MD_SLOW - 1) g_macd[i] = g_ema_f[i] - g_ema_s[i];
+   EmaStep(g_macd, MD_SLOW - 1, i, MD_SIG, g_sig);
+  }
+
+// Level B row: MACD line, signal line (empty while undefined), then the crosses once both are defined at i - 1.
+string FamilyDump(const int i)
+  {
+   string s = (i >= MD_SLOW - 1 ? HB(g_macd[i]) : "") + "," + (i >= MD_WARMUP - 1 ? HB(g_sig[i]) : "");
+   if(i < MD_WARMUP) return s + ",,";
+   double mn = g_macd[i], sn = g_sig[i], mp = g_macd[i - 1], sp = g_sig[i - 1];
+   return s + "," + B01(mp <= sp && mn > sn) + "," + B01(mp >= sp && mn < sn);
+  }
+
+bool MdOpen(const int dir, const int i, const string reason, Intent &out)
+  {
+   bool suppress, hs, ht;
+   double sd, td;
+   StopDistances(i, P_SL_ATR, P_TP_ATR, P_ATR_PERIOD, suppress, hs, sd, ht, td);
+   if(suppress) return false;
+   out = MakeIntent(dir, P_VOLUME, i, reason, hs, sd, ht, td);
+   return true;
+  }
+
+bool FamilyOnBar(const int i, Intent &out)
+  {
+   if(i < MD_WARMUP) return false;   // macd and signal at i and i - 1 are all defined from here on
+   double macd_now = g_macd[i], sig_now = g_sig[i], macd_prev = g_macd[i - 1], sig_prev = g_sig[i - 1];
+   bool cl = g_dir > 0, cs = g_dir < 0;
+   if(g_pending_dir != 0)
+     {
+      if(!MdOpen(g_pending_dir, i, "PENDING_OPEN", out)) return false;
+      g_dir = g_pending_dir;
+      g_pending_dir = 0;
+      return true;
+     }
+   if(macd_prev <= sig_prev && macd_now > sig_now)
+     {
+      if(cs)
+        {
+         g_dir = 0; g_pending_dir = 1;
+         out = MakeIntent(1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+         return true;
+        }
+      if(!cl)
+        {
+         if(!MdOpen(1, i, "ENTRY", out)) return false;
+         g_dir = 1;
+         return true;
+        }
+     }
+   else if(macd_prev >= sig_prev && macd_now < sig_now)
+     {
+      if(cl)
+        {
+         g_dir = 0; g_pending_dir = -1;
+         out = MakeIntent(-1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+         return true;
+        }
+      if(!cs)
+        {
+         if(!MdOpen(-1, i, "ENTRY", out)) return false;
+         g_dir = -1;
+         return true;
+        }
+     }
+   return false;
+  }

@@ -1,0 +1,36 @@
+{
+  "schema": "arqvio.mql5.magic_ranges",
+  "version": 1,
+  "space": {"min": 610000000, "max": 610999999},
+  "ranges": [
+    {
+      "name": "s6-parity-fixtures",
+      "base": 610000000,
+      "span": 100000,
+      "slots": "subject index in the pre-registered S6 subject order (S-BAT, S-MA, S-EDGE)"
+    },
+    {
+      "name": "ga-usdcadm_h1-s7-cbcb2ae061e70bef",
+      "base": 610100000,
+      "span": 100000,
+      "slots": "finalist index in the campaign's manifest_v2 candidates order"
+    },
+    {
+      "name": "arqvio-deploy",
+      "base": 610500000,
+      "span": 100000,
+      "slots": "deployed bot index in <ARQVIO_HOME>/artifacts/deploy/bots.json, allocated in order and never reused"
+    },
+    {
+      "name": "s6-live-demo",
+      "base": 610900000,
+      "span": 100000,
+      "slots": "fixed roles: 0 worker, 1 and 2 kill-switch planted own positions, 3 planted own pending order"
+    }
+  ],
+  "outside": {
+    "account_history": [0, 77789],
+    "f2_probe": [999000001],
+    "planted_foreign": [424242]
+  }
+}

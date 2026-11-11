@@ -1,0 +1,294 @@
+//--- family SIGNALS (backtest/signal_switches.py + strategies/signals.py): research entry signals as switches ---
+// Live EA only: the Strategy Tester parity EA refuses this family until its parity subject exists (Phase 6). Every
+// rule is the engine's, read from the closed bars ingested so far; sums run oldest to newest as in the engine.
+const int P_ATR_PERIOD = {{ cfg.atr_period }};
+double P_VOLUME, P_SL_ATR, P_TP_ATR;
+int g_vote[];
+
+void FamilyInitConstants()
+  {
+   P_VOLUME = FromBits({{ cfg.volume | bits }});
+   P_SL_ATR = FromBits({{ cfg.sl_atr | bits }});
+   P_TP_ATR = FromBits({{ cfg.tp_atr | bits }});
+  }
+
+double SgMean(const double &a[], const int j, const int n)
+  {
+   double s = 0.0;
+   for(int k = j - n + 1; k <= j; k++) s += a[k];
+   return s / n;
+  }
+
+// Bollinger: SMA and population sd of the n closes ending at j.
+void SgBands(const int j, const int n, const double k, double &mid, double &lower, double &upper)
+  {
+   mid = SgMean(g_close, j, n);
+   double ss = 0.0;
+   for(int x = j - n + 1; x <= j; x++) ss += (g_close[x] - mid) * (g_close[x] - mid);
+   double sd = MathSqrt(ss / n);
+   lower = mid - k * sd;
+   upper = mid + k * sd;
+  }
+
+double SgCci(const int j)
+  {
+   double s = 0.0;
+   for(int x = j - 13; x <= j; x++) s += (g_high[x] + g_low[x] + g_close[x]) / 3.0;
+   double m = s / 14.0, md = 0.0;
+   for(int x = j - 13; x <= j; x++) md += MathAbs((g_high[x] + g_low[x] + g_close[x]) / 3.0 - m);
+   md /= 14.0;
+   double tp = (g_high[j] + g_low[j] + g_close[j]) / 3.0;
+   return (md == 0.0) ? 0.0 : (tp - m) / (0.015 * md);
+  }
+
+double SgRsi(const int j)
+  {
+   double g = 0.0, l = 0.0;
+   for(int x = j - 13; x <= j; x++) { double ch = g_close[x] - g_close[x - 1]; g += (ch > 0.0 ? ch : 0.0); l += (ch < 0.0 ? -ch : 0.0); }
+   g /= 14.0; l /= 14.0;
+   return (l == 0.0) ? 100.0 : 100.0 - 100.0 / (1.0 + g / l);
+  }
+
+double SgWilliams(const int j)
+  {
+   double hh = g_high[j - 13], ll = g_low[j - 13];
+   for(int x = j - 12; x <= j; x++) { hh = MathMax(hh, g_high[x]); ll = MathMin(ll, g_low[x]); }
+   return (hh == ll) ? -50.0 : -100.0 * (hh - g_close[j]) / (hh - ll);
+  }
+
+// Stateful signals (kalman, orb, vwap): SgVote runs once per ingested bar, oldest first, as the engine steps them.
+double g_kx = 0.0, g_kp = 1.0, g_kd_prev = 0.0, g_kd_now = 0.0;
+bool g_kd_prev_ok = false, g_kd_now_ok = false;
+int g_kn = 0;
+long g_orb_day = -1;
+int g_orb_k = 0;
+double g_orb_hi = 0.0, g_orb_lo = 0.0;
+bool g_orb_fired = false;
+long g_vw_day = -1;
+double g_vw_pv = 0.0, g_vw_vv = 0.0, g_vw_prev_c = 0.0, g_vw_prev_w = 0.0;
+bool g_vw_prev_ok = false;
+
+bool SgSqueezed(const int j)
+  {
+   if(j < 19) return false;
+   double mid, lw, up;
+   SgBands(j, 20, 2.0, mid, lw, up);
+   double a = SgMean(g_tr, j, 20);
+   return lw > mid - 1.5 * a && up < mid + 1.5 * a;
+  }
+
+int SgVote(const int i)
+  {
+   bool upv = false, dnv = false;
+{% if "cci" in switches %}
+   if(i >= 14) { double p = SgCci(i - 1), n = SgCci(i); if(p <= -100.0 && -100.0 < n) upv = true; else if(p >= 100.0 && 100.0 > n) dnv = true; }
+{% endif %}
+{% if "mom_break" in switches %}
+   if(i >= 13) { double mv = (i == 0) ? 0.0 : g_close[i] - g_close[i - 1], a = SgMean(g_tr, i, 14); if(mv > 0.5 * a) upv = true; else if(mv < -0.5 * a) dnv = true; }
+{% endif %}
+{% if "engulfing" in switches %}
+   if(i >= 1)
+     {
+      double o1 = g_open[i - 1], c1 = g_close[i - 1], o = g_open[i], c = g_close[i];
+      if(c1 < o1 && c > o && o <= c1 && c >= o1) upv = true;
+      else if(c1 > o1 && c < o && o >= c1 && c <= o1) dnv = true;
+     }
+{% endif %}
+{% if "inside_break" in switches %}
+   if(i >= 2 && g_high[i - 1] <= g_high[i - 2] && g_low[i - 1] >= g_low[i - 2])
+     { if(g_close[i] > g_high[i - 1]) upv = true; else if(g_close[i] < g_low[i - 1]) dnv = true; }
+{% endif %}
+{% if "wick_rejection" in switches %}
+   {
+    double o = g_open[i], h = g_high[i], l = g_low[i], c = g_close[i], rng = h - l;
+    if(rng > 0.0)
+      {
+       double body = MathAbs(c - o), lower = MathMin(o, c) - l, upper = h - MathMax(o, c);
+       if(lower >= 2.0 * body && c >= l + 2.0 * rng / 3.0) upv = true;
+       else if(upper >= 2.0 * body && c <= l + rng / 3.0) dnv = true;
+      }
+   }
+{% endif %}
+{% if "liqsweep" in switches %}
+   if(i >= 20)
+     {
+      double plo = g_low[i - 20], phi = g_high[i - 20];
+      for(int x = i - 19; x <= i - 1; x++) { plo = MathMin(plo, g_low[x]); phi = MathMax(phi, g_high[x]); }
+      if(g_low[i] < plo && g_close[i] > plo) upv = true;
+      else if(g_high[i] > phi && g_close[i] < phi) dnv = true;
+     }
+{% endif %}
+{% if "fade" in switches %}
+   if(i >= 13) { double mid = SgMean(g_close, i, 10), a = SgMean(g_tr, i, 14); if(g_close[i] < mid - 2.0 * a) upv = true; else if(g_close[i] > mid + 2.0 * a) dnv = true; }
+{% endif %}
+{% if "squeeze" in switches %}
+   if(i >= 20 && SgSqueezed(i - 1))
+     {
+      double mid, lw, up;
+      SgBands(i, 20, 2.0, mid, lw, up);
+      if(g_close[i] > up) upv = true; else if(g_close[i] < lw) dnv = true;
+     }
+{% endif %}
+{% if "three_soldiers" in switches %}
+   if(i >= 13)
+     {
+      double need = 0.4 * SgMean(g_tr, i, 14);
+      bool bull = true, bear = true;
+      for(int x = i - 2; x <= i; x++) { if(!(g_close[x] - g_open[x] >= need)) bull = false; if(!(g_open[x] - g_close[x] >= need)) bear = false; }
+      if(bull && g_close[i - 1] > g_close[i - 2] && g_close[i] > g_close[i - 1]) upv = true;
+      else if(bear && g_close[i - 1] < g_close[i - 2] && g_close[i] < g_close[i - 1]) dnv = true;
+     }
+{% endif %}
+{% if "rsi" in switches %}
+   if(i >= 15) { double p = SgRsi(i - 1), n = SgRsi(i); if(p <= 30.0 && 30.0 < n) upv = true; else if(p >= 70.0 && 70.0 > n) dnv = true; }
+{% endif %}
+{% if "bb" in switches %}
+   if(i >= 20)
+     {
+      double pm, pl, pu, m, l, u;
+      SgBands(i - 1, 20, 2.0, pm, pl, pu);
+      SgBands(i, 20, 2.0, m, l, u);
+      if(g_close[i - 1] < pl && g_close[i] >= l) upv = true;
+      else if(g_close[i - 1] > pu && g_close[i] <= u) dnv = true;
+     }
+{% endif %}
+{% if "pin_bar" in switches %}
+   {
+    double o = g_open[i], h = g_high[i], l = g_low[i], c = g_close[i], rng = h - l;
+    if(rng > 0.0 && MathAbs(c - o) <= 0.33 * rng)
+      {
+       if(MathMin(o, c) - l >= 2.0 * rng / 3.0) upv = true;
+       else if(h - MathMax(o, c) >= 2.0 * rng / 3.0) dnv = true;
+      }
+   }
+{% endif %}
+{% if "williams" in switches %}
+   if(i >= 14) { double p = SgWilliams(i - 1), n = SgWilliams(i); if(p <= -80.0 && -80.0 < n) upv = true; else if(p >= -20.0 && -20.0 > n) dnv = true; }
+{% endif %}
+{% if "fib" in switches %}
+   if(i >= 50)
+     {
+      int ih = 0, il = 0;
+      double hh = g_high[i - 50], ll = g_low[i - 50];
+      for(int k = 1; k < 50; k++)
+        {
+         if(g_high[i - 50 + k] > hh) { ih = k; hh = g_high[i - 50 + k]; }
+         if(g_low[i - 50 + k] < ll) { il = k; ll = g_low[i - 50 + k]; }
+        }
+      if(hh > ll)
+        {
+         if(ih > il) { double lv = hh - 0.618 * (hh - ll); if(g_low[i] <= lv && lv < g_close[i]) upv = true; }
+         else if(il > ih) { double lv = ll + 0.618 * (hh - ll); if(g_high[i] >= lv && lv > g_close[i]) dnv = true; }
+        }
+     }
+{% endif %}
+{% if "atr_run" in switches %}
+   if(i >= 13)
+     {
+      double need = 1.5 * SgMean(g_tr, i, 14);
+      if(g_close[i - 2] > g_close[i - 3] && g_close[i - 1] > g_close[i - 2] && g_close[i] > g_close[i - 1] && g_close[i] - g_close[i - 3] > need) upv = true;
+      else if(g_close[i - 2] < g_close[i - 3] && g_close[i - 1] < g_close[i - 2] && g_close[i] < g_close[i - 1] && g_close[i - 3] - g_close[i] > need) dnv = true;
+     }
+{% endif %}
+{% if "vwap" in switches %}
+   {
+    long day = g_time[i] / 86400;
+    if(day != g_vw_day) { g_vw_day = day; g_vw_pv = 0.0; g_vw_vv = 0.0; }
+    g_vw_pv += (g_high[i] + g_low[i] + g_close[i]) / 3.0 * g_vol[i];
+    g_vw_vv += g_vol[i];
+    bool ok = g_vw_vv > 0.0;
+    double w = ok ? g_vw_pv / g_vw_vv : 0.0;
+    if(ok && g_vw_prev_ok)
+      {
+       if(g_vw_prev_c <= g_vw_prev_w && g_close[i] > w) upv = true;
+       else if(g_vw_prev_c >= g_vw_prev_w && g_close[i] < w) dnv = true;
+      }
+    g_vw_prev_ok = ok; g_vw_prev_c = g_close[i]; g_vw_prev_w = w;
+   }
+{% endif %}
+{% if "orb" in switches %}
+   {
+    long day = g_time[i] / 86400;
+    if(day != g_orb_day) { g_orb_day = day; g_orb_k = 0; g_orb_fired = false; }
+    if(g_orb_k < 4)
+      {
+       g_orb_hi = (g_orb_k == 0) ? g_high[i] : MathMax(g_orb_hi, g_high[i]);
+       g_orb_lo = (g_orb_k == 0) ? g_low[i] : MathMin(g_orb_lo, g_low[i]);
+      }
+    else if(!g_orb_fired)
+      {
+       if(g_close[i] > g_orb_hi) { upv = true; g_orb_fired = true; }
+       else if(g_close[i] < g_orb_lo) { dnv = true; g_orb_fired = true; }
+      }
+    g_orb_k++;
+   }
+{% endif %}
+{% if "kalman" in switches %}
+   {
+    g_kn++;
+    if(g_kn == 1) g_kx = g_close[i];
+    else
+      {
+       double pp = g_kp + 0.01, k = pp / (pp + 1.0), x = g_kx + k * (g_close[i] - g_kx);
+       g_kp = (1.0 - k) * pp;
+       g_kd_prev = g_kd_now; g_kd_prev_ok = g_kd_now_ok;
+       g_kd_now = x - g_kx; g_kd_now_ok = true;
+       g_kx = x;
+      }
+    if(g_kn >= 20 && g_kd_prev_ok && g_kd_now_ok)
+      {
+       if(g_kd_now > 0.0 && 0.0 >= g_kd_prev) upv = true;
+       else if(g_kd_now < 0.0 && 0.0 <= g_kd_prev) dnv = true;
+      }
+   }
+{% endif %}
+   if(upv && !dnv) return 1;
+   if(dnv && !upv) return -1;
+   return 0;
+  }
+
+void FamilyUpdate(const int i)
+  {
+   ArrayResize(g_vote, i + 1, 65536);
+   g_vote[i] = SgVote(i);
+  }
+
+string FamilyDump(const int i)
+  {
+   return IntegerToString(g_vote[i]);
+  }
+
+bool SgOpen(const int dir, const int i, const string reason, Intent &out)
+  {
+   bool suppress, hs, ht;
+   double sd, td;
+   StopDistances(i, P_SL_ATR, P_TP_ATR, P_ATR_PERIOD, suppress, hs, sd, ht, td);
+   if(suppress) return false;
+   out = MakeIntent(dir, P_VOLUME, i, reason, hs, sd, ht, td);
+   return true;
+  }
+
+bool FamilyOnBar(const int i, Intent &out)
+  {
+   if(i < 1) return false;   // warmup = 1 (strategies/signals.py WARMUP)
+   bool cl = g_dir > 0, cs = g_dir < 0;
+   if(g_pending_dir != 0)
+     {
+      if(!SgOpen(g_pending_dir, i, "PENDING_OPEN", out)) return false;
+      g_dir = g_pending_dir;
+      g_pending_dir = 0;
+      return true;
+     }
+   int v = g_vote[i];
+   if(v > 0)
+     {
+      if(cs) { g_dir = 0; g_pending_dir = 1; out = MakeIntent(1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0); return true; }
+      if(!cl) { if(!SgOpen(1, i, "ENTRY", out)) return false; g_dir = 1; return true; }
+     }
+   else if(v < 0)
+     {
+      if(cl) { g_dir = 0; g_pending_dir = -1; out = MakeIntent(-1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0); return true; }
+      if(!cs) { if(!SgOpen(-1, i, "ENTRY", out)) return false; g_dir = -1; return true; }
+     }
+   return false;
+  }

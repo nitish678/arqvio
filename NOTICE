@@ -1,0 +1,4 @@
+NOTICE
+
+ARQVIO © 2026 Nitish Kumar. Licensed under Apache-2.0.
+Third-party packages declared in `uv.lock` (backend) and `apps/desktop/package.json` (frontend) retain their own licenses. Install/use only via the referenced lockfiles. The packaged/bundled runtime is not included and must be built separately under its own terms.

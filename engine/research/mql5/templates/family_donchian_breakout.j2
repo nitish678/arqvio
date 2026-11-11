@@ -1,0 +1,87 @@
+//--- family DONCHIAN_BREAKOUT (backtest/strategies/donchian_breakout.py) ---
+const int DC_PERIOD = {{ cfg.period }};
+const int P_ATR_PERIOD = {{ cfg.atr_period }};
+double P_VOLUME, P_SL_ATR, P_TP_ATR;
+double g_upper[], g_lower[];
+
+void FamilyInitConstants()
+  {
+   P_VOLUME = FromBits({{ cfg.volume | bits }});
+   P_SL_ATR = FromBits({{ cfg.sl_atr | bits }});
+   P_TP_ATR = FromBits({{ cfg.tp_atr | bits }});
+  }
+
+void FamilyUpdate(const int i)
+  {
+   ArrayResize(g_upper, i + 1, 65536); ArrayResize(g_lower, i + 1, 65536);
+   g_upper[i] = 0.0; g_lower[i] = 0.0;
+   if(i < DC_PERIOD - 1) return;
+   int lo = i - DC_PERIOD + 1;
+   double hh = g_high[lo], ll = g_low[lo];
+   for(int j = lo + 1; j <= i; j++) { hh = MathMax(hh, g_high[j]); ll = MathMin(ll, g_low[j]); }
+   g_upper[i] = hh;
+   g_lower[i] = ll;
+  }
+
+// Level B row: upper, lower channel (empty while undefined), then the breakouts against the previous channel.
+string FamilyDump(const int i)
+  {
+   string s = (i >= DC_PERIOD - 1 ? HB(g_upper[i]) + "," + HB(g_lower[i]) : ",");
+   if(i < DC_PERIOD) return s + ",,";
+   return s + "," + B01(g_close[i] > g_upper[i - 1]) + "," + B01(g_close[i] < g_lower[i - 1]);
+  }
+
+bool DcOpen(const int dir, const int i, const string reason, Intent &out)
+  {
+   bool suppress, hs, ht;
+   double sd, td;
+   StopDistances(i, P_SL_ATR, P_TP_ATR, P_ATR_PERIOD, suppress, hs, sd, ht, td);
+   if(suppress) return false;
+   out = MakeIntent(dir, P_VOLUME, i, reason, hs, sd, ht, td);
+   return true;
+  }
+
+bool FamilyOnBar(const int i, Intent &out)
+  {
+   if(i < DC_PERIOD) return false;   // warmup = period
+   bool cl = g_dir > 0, cs = g_dir < 0;
+   if(g_pending_dir != 0)
+     {
+      if(!DcOpen(g_pending_dir, i, "PENDING_OPEN", out)) return false;
+      g_dir = g_pending_dir;
+      g_pending_dir = 0;
+      return true;
+     }
+   double upper_prev = g_upper[i - 1], lower_prev = g_lower[i - 1], close_now = g_close[i];
+   if(close_now > upper_prev)
+     {
+      if(cs)
+        {
+         g_dir = 0; g_pending_dir = 1;
+         out = MakeIntent(1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+         return true;
+        }
+      if(!cl)
+        {
+         if(!DcOpen(1, i, "ENTRY", out)) return false;
+         g_dir = 1;
+         return true;
+        }
+     }
+   else if(close_now < lower_prev)
+     {
+      if(cl)
+        {
+         g_dir = 0; g_pending_dir = -1;
+         out = MakeIntent(-1, 0.0, i, "REVERSAL_CLOSE", false, 0.0, false, 0.0);
+         return true;
+        }
+      if(!cs)
+        {
+         if(!DcOpen(-1, i, "ENTRY", out)) return false;
+         g_dir = -1;
+         return true;
+        }
+     }
+   return false;
+  }

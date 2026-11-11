@@ -1,0 +1,144 @@
+[project]
+name = "arqvio"
+version = "0.2.0-rc.1-dev"
+description = "ARQVIO - Windows-native quantitative research and strategy discovery platform (public source snapshot, not a release)"
+requires-python = ">=3.11,<3.12"
+authors = [{ name = "Nitish Kumar" }]
+readme = "README.md"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    "numpy>=2.0,<3.0",
+    "scipy>=1.13,<2.0",
+    "pandas>=2.2,<3.0",
+    "numba>=0.60,<0.62",
+    "polars>=0.20,<0.23",
+    "pyarrow>=16.0,<18.0",
+    "duckdb>=1.1,<2.0",
+    "sqlalchemy>=2.0,<3.0",
+    "pydantic>=2.7,<3.0",
+    "fastapi>=0.115,<0.116",
+    "uvicorn>=0.30,<0.32",
+    "httpx>=0.27,<1.0",
+    "pyyaml>=6.0,<7.0",
+    "python-dotenv>=1.0,<2.0",
+    "pywin32>=306; sys_platform == 'win32'",
+    "cryptography>=42.0,<44.0",
+    "MetaTrader5>=5.0.45,<5.1",
+    "loguru>=0.7,<0.8",
+    "anyio>=4.4,<5.0",
+    "jinja2>=3.1,<4.0",
+    "matplotlib>=3.9,<4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9.0",
+    "pytest-asyncio>=0.24,<1.0",
+    "pytest-benchmark>=4.0,<5.0",
+    "hypothesis>=6.100,<7.0",
+    "mypy>=1.11,<2.0",
+    "ruff>=0.6,<0.7",
+    "pyinstaller>=6.10,<7.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["engine"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["research_data", "logs", "apps"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "PT",   # pytest style
+    "RUF",  # ruff-specific
+]
+ignore = [
+    "E501",  # line length handled by formatter
+    "RUF001",  # ambiguous Unicode in strings - × is mandated by the S5 spec
+    "RUF002",  # ambiguous Unicode in docstrings - same
+    "RUF005",  # tuple-concat suggestion - keep SIGNAL2_VALUES explicit
+    "F841",    # local variable assigned but never used - allowed in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # asserts allowed in tests
+"engine/research/evolution/**" = ["N803"]  # GA convention names
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_defs = true
+exclude = ["research_data", "logs", "apps", "mql5/generated"]
+
+[[tool.mypy.overrides]]
+module = "MetaTrader5"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "numba.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyarrow"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyarrow.parquet"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = ["-ra", "--strict-markers", "--tb=short"]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "stage_1: stage 1 smoke tests",
+    "stage_2: stage 2 smoke tests",
+    "stage_3: stage 3 smoke tests",
+    "stage_4: stage 4 smoke tests",
+    "stage_5: stage 5 smoke tests",
+    "stage_6: stage 6 smoke tests",
+    "stage_7: stage 7 smoke tests",
+    "stage_8: stage 8 smoke tests",
+    "stage_9: stage 9 smoke tests",
+    "stage_10: stage 10 smoke tests",
+    "stage_11: stage 11 smoke tests",
+    "stage_12: stage 12 smoke tests",
+    "stage_13: stage 13 smoke tests",
+    "stage_14: stage 14 smoke tests",
+    "stage_15: stage 15 smoke tests",
+    "stage_16: stage 16 smoke tests",
+    "stage_17: stage 17 smoke tests",
+    "stage_18: stage 18 smoke tests",
+    "stage_19: stage 19 smoke tests",
+    "slow: long-running tests",
+    "integration: integration tests",
+    "parity: parity tests against MT5",
+    "e2e: end-to-end tests",
+]
+
+[tool.uv]
+managed = true
+dev-dependencies = [
+    "pytest>=8.3,<9.0",
+    "pytest-asyncio>=0.24,<1.0",
+    "mypy>=1.11,<2.0",
+    "ruff>=0.6,<0.7",
+]
