@@ -9,7 +9,7 @@ Owner named target V4.2.0 on 2026-11-10; status updated 2026-11-11. No package v
 | 0 | Baseline/archive/canonical docs | Scoped preservation VERIFIED; broader inventory remains | Recoverable backup and selected source/runtime identity established; RC and artifact coverage gaps recorded |
 | 1 | MT5/data/launch reliability | PARTIAL: outcome accounting verified | Source-explicit data, idempotent readiness/queue, real funnel, coverage/DST/spec/cost checks |
 | 2 | Shared engine/genome/evidence | PARTIAL: capability declarations, strict record schema, admission/mutation and common gate view verified | Actual trusted evidence writers/collectors, effective parameters, complete supported grammar and pinned interaction parity |
-| 3 | Strategy families/execution | PARTIAL: horizon contract and explicit scalping refusal verified | Gold/FX intraday/swing; pending/partial fills only proven; scalping tick fidelity explicitly gated |
+| 3 | Strategy families/execution | PARTIAL: horizon contract, paged M1 retrieval and experimental tick fill smoke verified | Gold/FX intraday/swing; pending/partial fills only proven; scalping tick fidelity explicitly gated |
 | 4 | Generalization/validation | PARTIAL: strict trial provenance and validation suite verified | Nested/purged evaluation, untouched lockbox governance, honest trial accounting and reference-checked statistics |
 | 5 | Measured ML | PLANNED | Better unseen net-of-cost performance vs equal-budget baseline, no leakage; otherwise experimental/off |
 | 6 | Friendly UI/UX | PLANNED | Clear simple workflow, truthful evidence/reasons, keyboard/accessibility and screenshots of real supported states |

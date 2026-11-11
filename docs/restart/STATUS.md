@@ -20,7 +20,7 @@ Private evidence directory (workspace-relative): `restart-archives/worker-eviden
 
 1. MT5 data reliability and truthful launch outcomes — PARTIAL: Phase 1A verified (43 offline Python tests, 27 desktop tests, TypeScript clean). See [launch outcomes evidence](PHASE1_LAUNCH_OUTCOMES.md). Readiness/queue/funnel/provenance work remains.
 2. Shared contracts and proven genome capabilities — PARTIAL: additive capability/evidence contract, admission guard, restricted-signal mutation fix and oracle gate fallback verified. 263 Python passed/3 skipped; 29 desktop passed; TypeScript clean; final pinned canary PASS (9.8s, 0 crashes). Actual proof collector and broad parameter/interaction coverage remain. See [Phase 2 evidence](PHASE2_CONTRACTS.md).
-3. Horizon-aware strategy families/fills — PARTIAL: explicit research/intraday/swing profiles and OHLC scalping refusal verified; pending/partial/tick fills remain. See [Phase 3 evidence](PHASE3_STRATEGIES.md).
+3. Horizon-aware strategy families/fills — PARTIAL: explicit research/intraday/swing profiles, paged M1 history and experimental tick fill path verified; pending/partial/full scalping parity remains. See [Phase 3 evidence](PHASE3_STRATEGIES.md), [M1 fix](M1_HISTORY_FIX.md) and [tick experiment](TICK_SCALPING_EXPERIMENT.md).
 4. Validation/generalization — PARTIAL: strict trial provenance and 140 validation tests pass; lockbox/nested-selection/evidence-writer work remains. See [Phase 4 evidence](PHASE4_VALIDATION.md). Statistical formulas remain frozen.
 5. Measured ML — PLANNED; existing smart priors are a heuristic.
 6. Friendly UI/UX — PLANNED; app copy English, owner discussion Roman Hinglish.

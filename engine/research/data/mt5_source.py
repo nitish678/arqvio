@@ -284,6 +284,25 @@ def snapshot_symbol_spec(terminal_path: str, name: str) -> SymbolSpec:
         _shutdown()
 
 
+def fetch_ticks(
+    terminal_path: str,
+    name: str,
+    date_from: datetime,
+    date_to: datetime,
+) -> Any:
+    """Read UTC ticks for research; never sends orders or changes terminal settings."""
+    if date_from >= date_to:
+        raise DataError("date_from must be < date_to")
+    _initialise(terminal_path)
+    try:
+        ticks = mt5.copy_ticks_range(name, date_from, date_to, mt5.COPY_TICKS_ALL)
+        if ticks is None or len(ticks) == 0:
+            raise DataError(f"no ticks returned for {name}: {mt5.last_error()}")
+        return ticks
+    finally:
+        _shutdown()
+
+
 def fetch_bars(
     terminal_path: str,
     name: str,
