@@ -34,11 +34,13 @@ def test_validation_run_does_not_move_dsr_bar(tmp_path: Path) -> None:
         reg.record(
             "c1", f"search-{i}", "EVALUATED", sharpe=sharpe,
             symbol="USDCADm", timeframe="H2", op_type="SEARCH_TRIAL",
+            dataset_hash="d", source="BUNDLED", as_of="2026-09-01T00:00:00Z",
         )
     before = cell_dsr_from_registry(reg, "c1", returns, "USDCADm", "H2")
     reg.record(
         "c1", "validation-1", "EVALUATED", sharpe=4.0,
         symbol="EURUSDm", timeframe="D1", op_type="VALIDATION_RUN",
+        dataset_hash="d2", source="CACHED", as_of="2026-09-10T00:00:00Z",
     )
     after = cell_dsr_from_registry(reg, "c1", returns, "USDCADm", "H2")
     assert before.dsr == after.dsr

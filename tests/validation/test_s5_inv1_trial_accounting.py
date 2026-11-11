@@ -98,11 +98,13 @@ def test_minbtl_counts_only_search_trials(reg: TrialRegistry) -> None:
         reg.record(
             "c3", f"s-{i}", "EVALUATED", sharpe=1.0,
             op_type=OpType.SEARCH_TRIAL.value,
+            dataset_hash="d", source="BUNDLED", as_of="2026-09-01T00:00:00Z",
         )
     for i in range(50):
         reg.record(
             "c3", f"v-{i}", "EVALUATED", sharpe=1.0,
             op_type=OpType.VALIDATION_RUN.value,
+            dataset_hash="d", source="BUNDLED", as_of="2026-09-01T00:00:00Z",
         )
     assert search_trial_count(reg, "c3") == 10
     out = minbtl(target_sharpe=1.0, n_trials=search_trial_count(reg, "c3"))

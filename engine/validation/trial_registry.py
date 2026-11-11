@@ -222,6 +222,19 @@ class TrialRegistry:
             raise ValueError(f"invalid op_type: {op_type!r}")
         if source is not None and source not in _VALID_SOURCES:
             raise ValueError(f"invalid source: {source!r}")
+        # Every new row must carry the campaign's immutable provenance. Legacy rows
+        # with absent provenance remain readable but cannot silently enter DSR.
+        with self._conn() as c:
+            campaign = c.execute(
+                "SELECT dataset_hash, symbol, timeframe FROM campaigns WHERE campaign_id=?",
+                (campaign_id,),
+            ).fetchone()
+        if campaign is None:
+            raise KeyError(f"unknown campaign_id: {campaign_id}")
+        if dataset_hash is None or source is None or as_of is None:
+            raise ValueError("dataset_hash, source and as_of are required for every trial record")
+        if op_type == OpType.SEARCH_TRIAL.value and str(dataset_hash) != str(campaign[0]):
+            raise ValueError("search trial dataset_hash must match the campaign provenance")
         symbol, timeframe = self._resolve_cell(campaign_id, symbol, timeframe)
         with self._conn() as c:
             c.execute(

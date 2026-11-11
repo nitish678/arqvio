@@ -80,6 +80,7 @@ def test_no_trials_round_trips_through_the_registry(tmp_path: Path) -> None:
             "c1", dna_hash=dna_hash, outcome="EVALUATED", sharpe=1.0,
             n_trades=50, symbol="USDCADm", timeframe="D1",
             op_type=OpType.SEARCH_TRIAL.value,
+            dataset_hash="h", source="BUNDLED", as_of="2026-09-01T00:00:00Z",
         )
     reg.update_dsr_many(
         "c1",
