@@ -15,6 +15,11 @@
 - Complete validation suite: **140 passed**, 3 numerical/statistical warnings, 175.61s. Warnings are existing PBO polynomial conditioning and PSR near-constant-return precision warnings; no assertions were weakened.
 - DSR/PBO formulas untouched. No canary needed for this registry-only change; kernel canary remains a separate gate.
 
+## Lockbox slice
+
+- Added an immutable metadata-only lockbox manifest: dataset/source/config/feature-pipeline hashes, sealed UTC, campaign ID and digest. Tampering or status changes refuse; this does not copy restricted data or grant promotion.
+- Lockbox tests: **3 passed**.
+
 ## Remaining
 
 - Lockbox governance: immutable final holdout identity and access/audit record.
