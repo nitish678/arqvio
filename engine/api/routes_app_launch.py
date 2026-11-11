@@ -38,6 +38,35 @@ log_router = APIRouter(prefix="/api/v2/app/log", tags=["app-log"])
 
 DEPTHS = {"QUICK": "SMOKE", "STANDARD": "STANDARD", "DEEP": "DEEP"}
 TIMEFRAMES = ("M5", "M15", "M30", "H1", "H4", "D1")
+
+# Phase 3 capability contract: OHLC bars can support research/intraday/swing
+# experiments, but they do not prove bid/ask tick-scalping execution.
+HORIZON_PROFILES = {
+    "research": {"timeframes": TIMEFRAMES, "execution": "MARKET2_OHLC", "scalping_validated": False},
+    "intraday": {"timeframes": ("M5", "M15", "M30", "H1"), "execution": "MARKET2_OHLC", "scalping_validated": False},
+    "swing": {"timeframes": ("H1", "H4", "D1"), "execution": "MARKET2_OHLC", "scalping_validated": False},
+    "scalping": {"timeframes": (), "execution": "BID_ASK_TICKS_REQUIRED", "scalping_validated": False},
+}
+SCALPING_REFUSAL = "scalping requires timestamped bid/ask tick data and execution parity; OHLC bars are not sufficient"
+
+
+def horizon_profile(horizon: str, timeframes: tuple[str, ...]) -> dict[str, object]:
+    try:
+        profile = HORIZON_PROFILES[horizon]
+    except KeyError as exc:
+        raise ValueError(f"unknown horizon {horizon!r}; choose {sorted(HORIZON_PROFILES)}") from exc
+    if horizon == "scalping":
+        raise ValueError(SCALPING_REFUSAL)
+    unsupported = sorted(set(timeframes) - set(profile["timeframes"]))
+    if unsupported:
+        raise ValueError(f"{horizon} horizon does not support timeframes {unsupported}")
+    return {"horizon": horizon, **profile}
+
+
+def supported_horizons() -> dict[str, dict[str, object]]:
+    return {name: dict(profile) for name, profile in HORIZON_PROFILES.items()}
+
+
 CROSS_PREFERENCE = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "XAUUSD")
 # A lone market is re-tested on a market of its own kind first (gold on silver, an index on another index): a gold
 # strategy re-tested on EURUSD says little. Then the general preference above.
@@ -105,6 +134,7 @@ class LaunchRequest(BaseModel):
     terminal: str
     symbols: list[str] = Field(min_length=1, max_length=12)
     timeframes: list[str] = Field(min_length=1, max_length=6)
+    horizon: Literal["research", "intraday", "swing", "scalping"] = "research"
     years: int = Field(6, ge=1, le=20)
     # "tribal": the island GA -- 2 tribes breeding apart, revolution and war (ga/islands.py); it cannot pause.
     # "v1": engine V1, the research engine (engine/research/v1): proving grounds, TRIBE A/B, Final War; PAUSE
@@ -133,8 +163,12 @@ def manual_defaults() -> dict[str, Any]:
 
 
 def plan(req: LaunchRequest, offered: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """The queue: data tasks (chosen markets, then any cross market a timeframe needs), then one breed task per
-    chosen market. Pure: ``offered`` is the terminal's symbol list."""
+    """Build data, cross-check and breed tasks after validating the horizon contract."""
+    horizon_profile(req.horizon, tuple(req.timeframes))
+    # Phase 3 keeps every task explicit; unsupported scalping never becomes an OHLC search.
+    if req.horizon == "scalping":
+        raise ValueError(SCALPING_REFUSAL)
+
     from engine.research.cells.add_market import cell_id
     from engine.research.data.terminals import main_pairs
 

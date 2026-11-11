@@ -7,7 +7,7 @@ This is a development roadmap, not an announced release date. Package metadata m
 | 0 | Source identity, preserved evidence and clean baseline | Local preservation done; wider RC/runtime acceptance incomplete |
 | 1 | Reliable MT5 data, honest launch outcomes, durable readiness | Partial: outcome/partial-result accounting tested; readiness/funnel/provenance remain |
 | 2 | Shared engine contracts, honest gene capabilities and grammar | Partial: evidence schema, declaration API/UI, admission/mutation checks and oracle gate view tested; trusted proof collection/interaction coverage remain |
-| 3 | Gold/major-FX intraday/swing strategy families and fill fidelity | Planned; tick-scalping support requires bid/ask/cost/execution evidence |
+| 3 | Gold/major-FX intraday/swing strategy families and fill fidelity | Partial: horizon profiles/scalping refusal; tick-scalping support requires bid/ask/cost/execution evidence |
 | 4 | Generalization, nested/purged evaluation and lockbox governance | Planned; statistical reference/formula review remains |
 | 5 | Measurable ML improvement over a fair non-ML baseline | Planned; no trained profitable model claimed |
 | 6 | Friendly accessible UI and clear beginner workflow | Planned; use existing components, expose advanced details progressively |

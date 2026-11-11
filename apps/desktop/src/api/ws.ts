@@ -236,6 +236,7 @@ export interface LaunchRequest {
   terminal: string;
   symbols: string[];
   timeframes: string[];
+  horizon?: "research" | "intraday" | "swing" | "scalping";
   years: number;
   depth: Depth;
   power: Power;

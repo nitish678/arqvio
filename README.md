@@ -2,7 +2,7 @@
 
 **An experimental, Windows-native research workbench for reproducible trading-strategy discovery.**
 
-ARQVIO combines a Python research engine, a local FastAPI API, a React/TypeScript interface and MetaTrader 5 integration. It is being developed toward **v4.2.0**. This repository contains a **development source snapshot through the current Phase 2 work**, not a finished release, a profitable trading system, or an installer.
+ARQVIO combines a Python research engine, a local FastAPI API, a React/TypeScript interface and MetaTrader 5 integration. It is being developed toward **v4.2.0**. This repository contains a **development source snapshot through the current Phase 3 horizon-contract slice**, not a finished release, a profitable trading system, or an installer.
 
 [Getting started](docs/GETTING_STARTED.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
@@ -14,8 +14,9 @@ ARQVIO combines a Python research engine, a local FastAPI API, a React/TypeScrip
 - Strategy vault, portfolio analysis, MT5 data/deployment components and local desktop UI under active development.
 - Current Phase 1 changes: distinguish blocked data, partial completion, failed search and completed empty search; preserve successful partial results.
 - Current Phase 2 changes: separate declared gene support from verified evidence; validate provenance records; reject unsupported active genomes; fix restricted-signal mutation; permit exact oracle input in finalist gates.
+- Current Phase 3 slice: explicit research/intraday/swing horizon profiles and an honest refusal for OHLC-only scalping.
 
-**Limits:** Phase 1 and Phase 2 are partial. Trusted proof-run collection, broader feature/interactions parity, tick-faithful scalping, trained ML, end-to-end data reliability and release acceptance remain open. Existing V1/V2 paths remain during migration to a shared engine. The interface's legacy `READY` label is not proof that a feature passed a current MT5 parity run.
+**Limits:** Phase 1, Phase 2 and Phase 3 are partial. Trusted proof-run collection, broader feature/interactions parity, tick-faithful scalping, trained ML, end-to-end data reliability and release acceptance remain open. Existing V1/V2 paths remain during migration to a shared engine. The interface's legacy `READY` label is not proof that a feature passed a current MT5 parity run.
 
 ## Why this project
 
