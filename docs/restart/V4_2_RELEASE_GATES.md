@@ -11,7 +11,7 @@ Owner named target V4.2.0 on 2026-11-10; status updated 2026-11-11. No package v
 | 2 | Shared engine/genome/evidence | PARTIAL: capability declarations, strict record schema, admission/mutation and common gate view verified | Actual trusted evidence writers/collectors, effective parameters, complete supported grammar and pinned interaction parity |
 | 3 | Strategy families/execution | PARTIAL: horizon contract, paged M1 retrieval and experimental tick fill smoke verified | Gold/FX intraday/swing; pending/partial fills only proven; scalping tick fidelity explicitly gated |
 | 4 | Generalization/validation | PARTIAL: strict trial provenance and validation suite verified | Nested/purged evaluation, untouched lockbox governance, honest trial accounting and reference-checked statistics |
-| 5 | Measured ML | PLANNED | Better unseen net-of-cost performance vs equal-budget baseline, no leakage; otherwise experimental/off |
+| 5 | Measured ML | PARTIAL: deterministic leakage-safe shadow baseline verified | Better unseen net-of-cost performance vs equal-budget baseline, no leakage; otherwise experimental/off |
 | 6 | Friendly UI/UX | PLANNED | Clear simple workflow, truthful evidence/reasons, keyboard/accessibility and screenshots of real supported states |
 | 7 | Portfolio/automation/monitoring | PLANNED | Combined risk/exposure simulation, crash recovery, paper evidence and explicit owner-controlled actions |
 | 8 | Release acceptance | PLANNED | Full supported-scope regression/parity, packaged-source identity, migration/install/rollback; installer needs explicit owner instruction |
