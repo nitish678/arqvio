@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import namedtuple
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
@@ -104,6 +104,71 @@ class Capped:
         out["time"] = int(end.replace(tzinfo=UTC).timestamp()) - 300 * np.arange(count, 0, -1)
         out["close"] = 1.1
         return out
+
+
+
+def test_m1_fallback_pages_maxbars_in_chunks() -> None:
+    class Paged:
+        TIMEFRAME_M1 = 1
+        def copy_rates_range(self, *args): return None
+        def terminal_info(self): return namedtuple("TI", "maxbars")(25_000)
+
+        def copy_rates_from_pos(self, symbol, tf, start, count):
+            self.calls.append((start, count))
+            out = np.zeros(count, dtype=RATES)
+            out["time"] = 1_700_000_000 + 60 * np.arange(start, start + count)
+            out["close"] = 1.1
+            return out
+
+        calls: list[tuple[int, int]] = []
+
+
+        # The runtime adapter exposes the same call surface.
+
+
+        calls = []
+
+        def terminal_info(self):
+            return namedtuple("TI", "maxbars")(25_000)
+
+        def copy_rates_from_pos(self, symbol, tf, start, count):
+            self.calls.append((start, count))
+            out = np.zeros(count, dtype=RATES)
+            out["time"] = 1_700_000_000 + 60 * np.arange(start, start + count)
+            out["close"] = 1.1
+            return out
+
+    fake = Paged()
+    start = datetime.fromtimestamp(1_700_000_000, tz=UTC)
+    end = start + timedelta(minutes=20_000)
+    bars = add_market.pull_bars(fake, "GBPUSDm", "M1", start, end)
+    assert len(bars["time"]) == 20_000
+    assert fake.calls == [(0, 10_000), (10_000, 10_000), (20_000, 5_000)]
+    assert int(bars["time"][0]) == int(start.timestamp())
+    assert int(bars["time"][-1]) < int(end.timestamp())
+
+
+def test_m1_fallback_does_not_accept_bars_after_requested_end() -> None:
+    class Future:
+        TIMEFRAME_M1 = 1
+
+        def terminal_info(self):
+            return namedtuple("TI", "maxbars")(25_000)
+
+        def copy_rates_range(self, *args):
+            return None
+
+        def copy_rates_from_pos(self, symbol, tf, start, count):
+            out = np.zeros(count, dtype=RATES)
+            out["time"] = 1_700_000_000 + 60 * (np.arange(start, start + count) + 100_000)
+            out["close"] = 1.1
+            return out
+
+    fake = Future()
+    start = datetime.fromtimestamp(1_700_000_000, tz=UTC)
+    end = start + timedelta(minutes=20_000)
+    with pytest.raises(add_market.AddMarketRefused, match="0 M1 bars"):
+        add_market.pull_bars(fake, "GBPUSDm", "M1", start, end)
 
 
 def test_a_window_past_the_terminals_bars_gets_the_newest_bars_it_has() -> None:

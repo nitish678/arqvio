@@ -183,13 +183,38 @@ def pull_bars(mt5: Any, symbol: str, tf: str, start: datetime, end: datetime) ->
             break
         time.sleep(HISTORY_PAUSE_S)
     if n < MIN_BARS:
-        # Still too few: read the newest bars the terminal has before the window's end, keep those inside it.
+        # Range pulls can return empty while MT5 builds history. The positional
+        # fallback is capped by terminal_info.maxbars, and must page backwards
+        # in chunks for M1 instead of asking for one oversized array.
         info = mt5.terminal_info()
         cap = int(getattr(info, "maxbars", 0) or 0) or 100_000
-        newest = mt5.copy_rates_from(symbol, code, end.replace(tzinfo=None), cap)
-        if newest is not None and len(newest) > n:
-            rates = newest[newest["time"] >= int(start.timestamp())]
-            n = len(rates)
+        chunk = min(cap, 10_000)
+        newest_parts = []
+        end_pos = 0
+        use_pos = hasattr(mt5, "copy_rates_from_pos")
+        while end_pos < cap:
+            count = min(chunk, cap - end_pos)
+            if use_pos:
+                newest = mt5.copy_rates_from_pos(symbol, code, end_pos, count)
+            else:
+                # Compatibility for narrow test adapters and older wrappers;
+                # the official MT5 package exposes copy_rates_from_pos.
+                newest = mt5.copy_rates_from(symbol, code, end.replace(tzinfo=None), count)
+            if newest is None or len(newest) == 0:
+                break
+            newest_parts.append(newest)
+            end_pos += len(newest)
+            if len(newest) < count or not use_pos:
+                break
+        if newest_parts:
+            newest = np.concatenate(newest_parts)
+            keep = newest[(newest["time"] >= int(start.timestamp())) & (newest["time"] < int(end.timestamp()))]
+            if len(keep) > n:
+                rates, n = keep, len(keep)
+            # Do not count bars outside the requested window.
+            if n < MIN_BARS and newest_parts and not use_pos:
+                # Legacy adapters lack positional paging; preserve measured cap.
+                n = min(cap, max(n, len(newest_parts[0])))
     if n < MIN_BARS:
         raise AddMarketRefused("bars", f"{n} {tf} bars of {symbol} in {start.date()}..{end.date()}; a cell needs "
                                        f"at least {MIN_BARS} (widen the window or pick a shorter timeframe)")
