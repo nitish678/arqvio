@@ -11,7 +11,7 @@
 
 ## Read-only market data probe
 
-Local report: `C:\Users\n69474736\Documents\ARQVIO\tester-validation-home\phase4_tester_read_report.json`.
+Private local report retained outside this public repository; raw broker evidence is not published.
 
 Probe actions: initialize read, symbol info, `copy_rates_range`, `copy_ticks_range` for seven days, shutdown. No trading APIs.
 
